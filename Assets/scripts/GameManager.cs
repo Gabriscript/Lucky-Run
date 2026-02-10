@@ -5,36 +5,33 @@ public class GameManager : MonoBehaviour
 {
     public int startingBalance = 90;
     public int startingBet = 10;
-    
 
     [SerializeField] PlayerMotor playerMotor;
     [SerializeField] private GameUIManager uiManager;
-
     public ChoiceTrigger leftDoor;
     public ChoiceTrigger rightDoor;
-    
+
     int currentBalance;
     int currentBet;
+
     
+    private Coroutine currentCountdownCoroutine;
 
     private void Start()
     {
         playerMotor.isMoving = false;
         playerMotor.speed = 0f;
-   
     }
+
     public void ProcessChoice(bool isCorrect)
     {
         playerMotor.speed = 0f;
         playerMotor.isMoving = false;
-
-        if (isCorrect) 
+        if (isCorrect)
             currentBalance += currentBet * 2;
-
-
-         StartCoroutine(PrepareNextRoundDelayed(1f));
+        StartCoroutine(PrepareNextRoundDelayed(1f));
     }
-    
+
     private IEnumerator PrepareNextRoundDelayed(float delay)
     {
         yield return new WaitForSeconds(delay);
@@ -49,22 +46,21 @@ public class GameManager : MonoBehaviour
             return;
         }
         currentBet = startingBet;
-
         ChoiceTrigger.ResetChoice();
-
-
         playerMotor.speed = 0f;
         playerMotor.isMoving = false;
         playerMotor.ResetPosition();
-
         uiManager.ShowMainScreen();
     }
 
-
-
-
     public void ResetGame()
     {
+  
+        if (currentCountdownCoroutine != null)
+        {
+            StopCoroutine(currentCountdownCoroutine);
+            currentCountdownCoroutine = null;
+        }
 
         currentBalance = startingBalance;
         currentBet = startingBet;
@@ -77,10 +73,15 @@ public class GameManager : MonoBehaviour
             playerMotor.speed = 0f;
             playerMotor.isMoving = false;
             playerMotor.ResetPosition();
-
         }
 
         ChoiceTrigger.ResetChoice();
+
+        // Resetta anche il timer UI a 5
+        if (uiManager != null)
+        {
+            uiManager.UpdateTimer(5);
+        }
     }
 
     public void IncreaseBet()
@@ -90,7 +91,6 @@ public class GameManager : MonoBehaviour
             currentBet += 10;
             currentBalance -= 10;
         }
-
         Debug.Log($"Bet increased to: {currentBet}, Balance: {currentBalance}");
     }
 
@@ -101,32 +101,43 @@ public class GameManager : MonoBehaviour
             currentBet -= 10;
             currentBalance += 10;
         }
-
         Debug.Log($"Bet decreased to: {currentBet}, Balance: {currentBalance}");
     }
 
-
     public void StopGame()
     {
-         Debug.Log($"Your final balance: {GetBalance()} ");
+        Debug.Log($"Your final balance: {GetBalance()} ");
+
+     
+        if (currentCountdownCoroutine != null)
+        {
+            StopCoroutine(currentCountdownCoroutine);
+            currentCountdownCoroutine = null;
+        }
+
         if (playerMotor != null)
         {
             playerMotor.speed = 0f;
             playerMotor.isMoving = false;
+            Time.timeScale = 0f;
         }
     }
 
-
-
     public void StartCountdown(float seconds)
     {
-        StartCoroutine(CountdownRoutine(seconds));
+   
+        if (currentCountdownCoroutine != null)
+        {
+            StopCoroutine(currentCountdownCoroutine);
+        }
+
+
+        currentCountdownCoroutine = StartCoroutine(CountdownRoutine(seconds));
     }
 
     private IEnumerator CountdownRoutine(float seconds)
     {
         yield return new WaitForEndOfFrame();
-
         float timer = seconds;
         uiManager.UpdateTimer(timer);
 
@@ -141,11 +152,22 @@ public class GameManager : MonoBehaviour
         uiManager.GamePlayScreen();
         playerMotor.isMoving = true;
         playerMotor.speed = 15f;
+
+   
+        currentCountdownCoroutine = null;
     }
 
     private void EndGame()
     {
         Debug.Log($"Game Over! Final Balance: {currentBalance}");
+
+ 
+        if (currentCountdownCoroutine != null)
+        {
+            StopCoroutine(currentCountdownCoroutine);
+            currentCountdownCoroutine = null;
+        }
+
         playerMotor.speed = 0f;
         playerMotor.isMoving = false;
 

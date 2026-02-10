@@ -105,7 +105,7 @@ public class GameUIManager : MonoBehaviour
         mainPanel.SetActive(false);
         gameOverPanel.SetActive(true);
 
-   //     finalBalanceText.text = $"Final Balance: {gameManager.GetBalance()}";
+
     }
     public void UpdateTimer(float value)
     {
